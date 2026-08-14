@@ -586,13 +586,13 @@ def main_menu():
 
         ),
 
-        types.InlineKeyboardButton(
+    types.InlineKeyboardButton(
 
-            E_HELP + " Help",
+    E_CHAT + " Support",
 
-            callback_data="help"
+    url="https://t.me/Kuro4321"
 
-        )
+)
 
     )
 
