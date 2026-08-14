@@ -64,7 +64,7 @@ E_TRUCK = "\U0001F69A"
 
 
 # ============================================================
-# 3. GAME CATALOG (UPDATED PRICES & NAMES, NO SERVICE CODES)
+# 3. GAME CATALOG (UPDATED PRICES)
 # ============================================================
 
 CATALOG = {
@@ -76,8 +76,8 @@ CATALOG = {
             {"id": "pubg_60", "name": "60 UC", "price": 220},
             {"id": "pubg_325", "name": "325 UC", "price": 1200},
             {"id": "pubg_660", "name": "660 UC", "price": 2390},
-            {"id": "pubg_1800", "name": "1800 UC", "price": 5975},
-            {"id": "pubg_3850", "name": "3850 UC", "price": 11,950}
+            {"id": "pubg_1800", "name": "1800 UC", "price": 5980},
+            {"id": "pubg_3850", "name": "3850 UC", "price": 11950}
         ]
     },
     "freefire": {
@@ -86,11 +86,11 @@ CATALOG = {
         "icon": E_FIRE,
         "packages": [
             {"id": "ff_110", "name": "110 Diamonds", "price": 220},
-            {"id": "ff_341", "name": "341 Diamonds", "price": 550},
-            {"id": "ff_572", "name": "572 Diamonds", "price": 840},
-            {"id": "ff_1166", "name": "1166 Diamonds", "price": 1670},
-            {"id": "ff_2398", "name": "2398 Diamonds", "price": 3790},
-            {"id": "ff_6160", "name": "6160 Diamonds", "price": 9640}
+            {"id": "ff_341", "name": "341 Diamonds", "price": 620},
+            {"id": "ff_572", "name": "572 Diamonds", "price": 1015},
+            {"id": "ff_1166", "name": "1166 Diamonds", "price": 2030},
+            {"id": "ff_2398", "name": "2398 Diamonds", "price": 4065},
+            {"id": "ff_6160", "name": "6160 Diamonds", "price": 10300}
         ]
     }
 }
