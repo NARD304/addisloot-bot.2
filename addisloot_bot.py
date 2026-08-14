@@ -19,7 +19,7 @@ import uuid
 # 1. CONFIG
 # ============================================================
 
-BOT_TOKEN = "YOUR_NEW_BOT_TOKEN"
+BOT_TOKEN = "8998441498:AAEV-jEkIwkxCoMpkKNSlfscedz25C_bdVs"
 
 ADMIN_CHAT_ID = "PUT_YOUR_EXISTING_ADMIN_CHAT_ID_HERE"
 
