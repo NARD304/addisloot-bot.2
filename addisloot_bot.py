@@ -1,142 +1,3 @@
-how do i conect my bot to be live in railway so it dosenot turoff when i close my computer
-
-Yes — now I can see your GitHub account. 👍
-
-You don't have a repository open yet, so we need to find the one containing bot.py.
-
-Do this:
-Click your purple profile icon in the top-right.
-Look for Your repositories and click it.
-You'll see a list of your repositories.
-Find the repository that contains bot.py.
-Click that repository.
-Once it opens, copy the URL from the browser address bar.
-
-It will look like:
-
-https://github.com/NARD304/NAME-OF-YOUR-REPO
-
-Then
-
-Go back to Render → Public Git Repository → paste that URL.
-
-Important: Don't use bot.py as the URL. bot.py is a file inside the repository.
-
-If you click Your repositories and send me a screenshot, I can tell you which one to click.
-
-Ah, now we know exactly why Render can't find your repository.
-
-Your GitHub account currently shows:
-
-“NARD304 doesn't have any public repositories yet.”
-
-So your bot is not in a public GitHub repository right now (or you haven't uploaded it to GitHub yet).
-
-The easiest next step
-
-We need to put your bot.py into a GitHub repository first.
-
-On the screen you're on:
-
-Click the green New button on the right.
-For Repository name, enter something like:
-telegram-bot
-Choose Public.
-Click Create repository.
-GitHub will give you a new empty repository.
-
-⚠️ Don't upload your bot token/password into a public repository. If your bot.py currently contains the actual Telegram/Discord token, stop before uploading it and show me the code (you can replace the token with YOUR_TOKEN).
-
-Once you create the repository, send me a screenshot of the new repository page. I'll guide you through uploading bot.py, then we'll connect that repository to Render.
-
-Pasted text(1).txt
-Document
-
-I checked the bot file you uploaded. Good news: the important secret fields are currently blank, so you should not put your real keys/tokens directly into a public GitHub repo. Your file currently has placeholders for the bot token, QBirr key, and FlashTopup key.
-
-Also, your bot is designed to run continuously with infinity_polling, so a Render Background Worker is the right type of service.
-
-Next step
-
-Go back to GitHub and:
-
-Click New repository.
-Name it something like addisloot-bot.
-Select Public.
-Create the repository.
-Upload your bot.py file.
-Do not put your real BOT_TOKEN, QBirr API key, or FlashTopup API key into the file.
-
-Then we'll put those values into Render's Environment Variables, which is much safer.
-
-Once you've created the GitHub repository, send me a screenshot of it and I'll walk you through the upload.
-
-it says discription
-
-Yes 👍 “Description” is just asking you to briefly describe what the repository is.
-
-You can enter:
-
-AddisLoot Telegram game top-up bot
-
-Then:
-
-Repository name: addisloot-bot
-Description: AddisLoot Telegram game top-up bot
-Public: select Public
-Leave the other options as they are
-Click Create repository
-
-After that, don't worry about the other settings yet. Send me a screenshot of the page after you create it, and I'll guide you through uploading bot.py.
-
-Perfect! 🎉 Your GitHub repository is created and it's public.
-
-I can also see the exact repository URL:
-
-https://github.com/NARD304/addisloot-bot
-
-Now upload your bot
-
-On this page, click:
-
-👉 “uploading an existing file”
-
-It's in the blue Quick setup box.
-
-Then:
-
-Click Choose your files.
-Select your bot.py file.
-Wait for it to finish uploading.
-Scroll down.
-Click Commit changes.
-
-⚠️ Important: Before you upload bot.py, make sure it does not contain your real Telegram bot token, QBirr API key, or FlashTopup API key. Your bot code uses those as secrets, so we'll put the real values into Render's Environment Variables instead.
-
-Once bot.py is uploaded and you see it listed in the repository, send me a screenshot. Then we'll connect this exact repository to Render.
-
-where do i find the upload an existing file
-
-It's right there on the page you just showed. 👇
-
-In the blue “Quick setup” box, look at the sentence:
-
-“Get started by creating a new file or uploading an existing file.”
-
-Click this exact text:
-
-👉 uploading an existing file
-
-It's just underneath the repository URL, around the middle-left of the blue box.
-
-After you click it, GitHub will take you to an upload page where you can choose your bot.py file.
-
-Don't click “creating a new file.”
-
-If you can't see the words, send me another screenshot and I'll point out exactly where to click.
-
-
-
 
 import telebot
 from telebot import types
@@ -157,17 +18,17 @@ ADDISLOOT - FRESH BOT (with FlashTopup auto-fulfillment)
 1. CONFIG
 ============================================================
 
-BOT_TOKEN = ""
+BOT_TOKEN = "8998441498:AAFyrdNjtUuXuhq0zrv_eCp11R1sXjajKJc"
 
 ADMIN_CHAT_ID = "PUT_YOUR_EXISTING_ADMIN_CHAT_ID_HERE"
 
-QBIRR_API_KEY = ""
+QBIRR_API_KEY = "vaBjgkb5.vtd74ZJ_NoKG07rFQtAVjmTaw_8gHTIG"
 
 PAYMENT_PROVIDER = "telebirr"
 
 RECEIVER_NAME = "NAROBIKA"
 
-RECEIVER_ACCOUNT = ""
+RECEIVER_ACCOUNT = "0983762777"
 
 MERCHANT_PAY_TO = "0983762777"
 
