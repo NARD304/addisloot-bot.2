@@ -38,8 +38,8 @@ MERCHANT_PAY_TO = "0983762777"
 
 FT_API_ID = "RS8XTD55WTQ0RU7V"
 
-FT_API_KEY = "" #88a2bdcd1e2973cd06b858aa430fda063e49bc4d54bb91ae6627233a4406673a
-
+FT_API_KEY = "88a2bdcd1e2973cd06b858aa430fda063e49bc4d54bb91ae6627233a4406673a
+" 
 FT_BASE_URL = "https://api.flashtopup.com/api/reseller/v2"
 
 ============================================================
