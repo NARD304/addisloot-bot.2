@@ -309,64 +309,59 @@ def money(amount):
 
 
 # ============================================================
-# 7. QBIRR
+# 7. SHEGERPAY VERIFICATION (CHANGED FROM QBIRR)
 # ============================================================
 
-QBIRR_BASE_URL = "https://verify.qbirr.com"
-
+SHEGERPAY_BASE_URL = "https://api.shegerpay.com/api/v1"
 
 def verify_payment(transaction_reference, amount):
-
+    """
+    Verify payment using ShegerPay API
+    
+    ShegerPay expects:
+    - provider: 'telebirr', 'cbe', 'abyssinia', etc.
+    - transaction_id: The reference from the payment
+    - amount: The exact amount paid
+    """
     payload = {
-
         "provider": PAYMENT_PROVIDER,
-
-        "ref": transaction_reference,
-
-        "amount": amount,
-
-        "receiver_name": RECEIVER_NAME
-
+        "transaction_id": transaction_reference,
+        "amount": amount
     }
-
+    
+    # Additional fields for specific banks
     if PAYMENT_PROVIDER in ("cbe", "abyssinia"):
-
         payload["receiver_account"] = RECEIVER_ACCOUNT
-
+    
     try:
-
         response = requests.post(
-
-            QBIRR_BASE_URL + "/api/v1/verify",
-
+            SHEGERPAY_BASE_URL + "/verify",
             json=payload,
-
             headers={
-
-                "X-API-Key": QBIRR_API_KEY,
-
+                "X-API-Key": SHEGERPAY_API_KEY,
                 "Content-Type": "application/json"
-
             },
-
             timeout=15
-
         )
-
         response.raise_for_status()
-
-        return response.json()
-
-    except Exception as error:
-
-        print("QBIRR ERROR:", error)
-
+        result = response.json()
+        
+        # ShegerPay returns { "verified": true/false, ... }
         return {
-
+            "verified": result.get("verified", False),
+            "payer": result.get("payer", {}).get("name", "Unknown"),
+            "transaction_id": result.get("transaction_id", transaction_reference),
+            "raw_response": result
+        }
+        
+    except requests.exceptions.RequestException as error:
+        print(f"SHEGERPAY ERROR: {error}")
+        if hasattr(error, 'response') and error.response:
+            print(f"Response status: {error.response.status_code}")
+            print(f"Response body: {error.response.text}")
+        return {
             "verified": False,
-
             "error": "verification_service_error"
-
         }
 
 
@@ -382,7 +377,7 @@ def place_flashtopup_order(
 ):
 
     """
-    Place an order on FlashTopup after QBirr verification succeeds.
+    Place an order on FlashTopup after ShegerPay verification succeeds.
     """
 
     path = "/api/reseller/v2/order"
@@ -1772,7 +1767,7 @@ def text_handler(message):
         + text
         + "</code>\n\n"
 
-        + "QBIRR response:\n"
+        + "ShegerPay response:\n"
         + str(
             result.get(
                 "error",
@@ -1856,158 +1851,4 @@ def confirm_command(message):
 
     )
 
-    bot.reply_to(
-
-        message,
-
-        E_CHECK
-        + " Order "
-        + order_id
-        + " marked as delivered."
-
-    )
-
-    bot.send_message(
-
-        order["user_id"],
-
-        E_ROCKET
-        + " <b>TOP-UP DELIVERED!</b>\n\n"
-
-        + E_CHECK
-        + " Your <b>"
-        + order["package"]
-        + "</b> has been delivered.\n\n"
-
-        + E_GAME
-        + " Game: "
-        + order["game"]
-        + "\n"
-
-        + E_ID
-        + " Player ID: <code>"
-        + str(order["player_id"])
-        + "</code>\n\n"
-
-        + "Thank you for using AddisLoot!",
-
-        parse_mode="HTML"
-
-    )
-
-
-# ============================================================
-# 19. ADMIN REJECT
-# ============================================================
-
-@bot.message_handler(commands=["reject"])
-def reject_command(message):
-
-    if str(message.chat.id) != str(ADMIN_CHAT_ID):
-
-        return
-
-    parts = message.text.split()
-
-    if len(parts) != 2:
-
-        bot.reply_to(
-
-            message,
-
-            "Usage: /reject ORDER_ID"
-
-        )
-
-        return
-
-    order_id = parts[1]
-
-    order = get_order(order_id)
-
-    if not order:
-
-        bot.reply_to(
-
-            message,
-
-            E_CROSS + " Order not found."
-
-        )
-
-        return
-
-    update_order(
-
-        order_id,
-
-        {
-            "status": "rejected"
-        }
-
-    )
-
-    bot.reply_to(
-
-        message,
-
-        E_CROSS
-        + " Order "
-        + order_id
-        + " rejected."
-
-    )
-
-    bot.send_message(
-
-        order["user_id"],
-
-        E_WARNING
-        + " <b>PAYMENT NOT VERIFIED</b>\n\n"
-
-        + "We could not verify your payment.\n\n"
-
-        + E_RECEIPT
-        + " Please check your transaction reference and contact support.",
-
-        parse_mode="HTML"
-
-    )
-
-
-# ============================================================
-# 20. RUN
-# ============================================================
-
-print("======================================")
-print(" ADDISLOOT BOT STARTED")
-print("======================================")
-print("Game top-ups: ON")
-print("Payment verification: QBirr")
-print("Order fulfillment: FlashTopup")
-print("Emoji mode: Unicode")
-print("======================================")
-
-
-while True:
-
-    try:
-
-        bot.infinity_polling(
-
-            skip_pending=True,
-
-            timeout=20,
-
-            long_polling_timeout=20
-
-        )
-
-    except Exception as e:
-
-        print(
-            "Polling crashed, restarting in 5s:",
-            e
-        )
-
-        time.sleep(5)
+    bot.reply_to
