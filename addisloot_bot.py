@@ -6,9 +6,10 @@ import os
 import time
 import random
 import string
+import html
 
 # ============================================================
-# ADDISLOOT - FRESH BOT (with Manual Fulfillment)
+# ADDISLOOT - FRESH BOT (Manual Fulfillment)
 # ============================================================
 
 # ============================================================
@@ -63,19 +64,20 @@ E_TRUCK = "\U0001F69A"
 
 
 # ============================================================
-# 3. GAME CATALOG
+# 3. GAME CATALOG (UPDATED PRICES & NAMES, NO SERVICE CODES)
 # ============================================================
+
 CATALOG = {
     "pubg": {
         "name": "PUBG Mobile",
         "product": "UC",
         "icon": E_GAME,
         "packages": [
-            {"id": "pubg_60", "name": "60 UC", "price": 220, "service_code": "FT_SERVICE_CODE_PUBG_60"},
-            {"id": "pubg_325", "name": "325 UC", "price": 800, "service_code": "FT_SERVICE_CODE_PUBG_325"},
-            {"id": "pubg_660", "name": "660 UC", "price": 1500, "service_code": "FT_SERVICE_CODE_PUBG_660"},
-            {"id": "pubg_1800", "name": "1800 UC", "price": 3200, "service_code": "FT_SERVICE_CODE_PUBG_1800"},
-            {"id": "pubg_3850", "name": "3850 UC", "price": 8400, "service_code": "FT_SERVICE_CODE_PUBG_3850"}
+            {"id": "pubg_60", "name": "60 UC", "price": 220},
+            {"id": "pubg_325", "name": "325 UC", "price": 1010},
+            {"id": "pubg_660", "name": "660 UC", "price": 2015},
+            {"id": "pubg_1800", "name": "1800 UC", "price": 5040},
+            {"id": "pubg_3850", "name": "3850 UC", "price": 10080}
         ]
     },
     "freefire": {
@@ -83,11 +85,12 @@ CATALOG = {
         "product": "Diamonds",
         "icon": E_FIRE,
         "packages": [
-            {"id": "ff_100", "name": "100 Diamonds", "price": 220, "service_code": "FT_SERVICE_CODE_FF_100"},
-            {"id": "ff_310", "name": "310 Diamonds", "price": 500, "service_code": "FT_SERVICE_CODE_FF_310"},
-            {"id": "ff_520", "name": "520 Diamonds", "price": 820, "service_code": "FT_SERVICE_CODE_FF_520"},
-            {"id": "ff_1080", "name": "1080 Diamonds", "price": 1530, "service_code": "FT_SERVICE_CODE_FF_1080"},
-            {"id": "ff_2200", "name": "2200 Diamonds", "price": 3750, "service_code": "FT_SERVICE_CODE_FF_2200"}
+            {"id": "ff_110", "name": "110 Diamonds", "price": 220},
+            {"id": "ff_341", "name": "341 Diamonds", "price": 500},
+            {"id": "ff_572", "name": "572 Diamonds", "price": 820},
+            {"id": "ff_1166", "name": "1166 Diamonds", "price": 1610},
+            {"id": "ff_2398", "name": "2398 Diamonds", "price": 3750},
+            {"id": "ff_6160", "name": "6160 Diamonds", "price": 9600}
         ]
     }
 }
@@ -96,6 +99,7 @@ CATALOG = {
 # ============================================================
 # 4. DATABASE
 # ============================================================
+
 DB_FILE = "orders.json"
 
 def load_orders():
@@ -132,14 +136,11 @@ def get_user_orders(user_id):
     orders = [order for order in data.values() if str(order["user_id"]) == str(user_id)]
     return sorted(orders, key=lambda x: x["created_at"], reverse=True)
 
-def get_paid_orders():
-    data = load_orders()
-    return [order for order in data.values() if order["status"] == "paid"]
-
 
 # ============================================================
 # 5. ORDER ID & MONEY
 # ============================================================
+
 def generate_order_id():
     timestamp = str(int(time.time() * 1000))[-7:]
     random_part = "".join(random.choices(string.ascii_uppercase + string.digits, k=4))
@@ -152,6 +153,7 @@ def money(amount):
 # ============================================================
 # 6. SHEGERPAY VERIFICATION
 # ============================================================
+
 SHEGERPAY_BASE_URL = "https://api.shegerpay.com/api/v1"
 
 def verify_payment(transaction_reference, amount):
@@ -203,10 +205,11 @@ def main_menu():
     return keyboard
 
 def welcome_message(name):
-    return (E_WAVE + " <b>WELCOME TO ADDISLOOT!</b>\n\nHello <b>" + name + "</b>! " + E_GAME + "\n\n" + 
+    safe_name = html.escape(name)
+    return (E_WAVE + " <b>WELCOME TO ADDISLOOT!</b>\n\nHello <b>" + safe_name + "</b>! " + E_GAME + "\n\n" + 
             E_DIAMOND + " <b>GAME TOP-UP STORE</b>\n\n" + E_LIGHTNING + " Fast top-ups\n" + 
             E_MONEY + " Pay in Birr\n" + E_SHIELD + " Secure payment\n" + E_CHECK + " Payment verification\n\n" + 
-            E_GAME + " <b>Choose your game below:</b>")
+            "━━━━━━━━━━━━━━━━━━\n\n" + E_GAME + " <b>Choose your game below:</b>")
 
 
 # ============================================================
@@ -292,20 +295,26 @@ def text_handler(message):
         create_order(order)
         del user_state[user_id]
 
-        bot.send_message(message.chat.id, 
-            E_CARD + " <b>PAYMENT</b>\n\nPay <b>" + money(package["price"]) + "</b> to:\n<code>" + MERCHANT_PAY_TO + "</code>\n\n" + 
-            E_RECEIPT + " After sending, reply with your Transaction Reference.", parse_mode="HTML")
+        payment_message = (E_CARD + " <b>PAYMENT</b>\n\n━━━━━━━━━━━━━━━━━━\n\n" + game["icon"] + " Game: <b>" + game["name"] + 
+            "</b>\n" + E_DIAMOND + " Package: <b>" + package["name"] + "</b>\n" + E_ID + " Player ID: <code>" + text + 
+            "</code>\n\n" + E_MONEY + " <b>TOTAL: " + money(package["price"]) + "</b>\n\n━━━━━━━━━━━━━━━━━━\n\n" + 
+            E_PHONE + " <b>PAY WITH " + PAYMENT_PROVIDER.upper() + "</b>\n\n" + E_PERSON + " Account:\n<code>" + 
+            MERCHANT_PAY_TO + "</code>\n\n" + E_MONEY + " Send exactly:\n<b>" + money(package["price"]) + 
+            "</b>\n\n━━━━━━━━━━━━━━━━━━\n\n" + E_RECEIPT + " <b>AFTER PAYMENT</b>\n\nSend your transaction reference here.\n\n" + 
+            E_SEARCH + " We will check the payment.")
+        
+        bot.send_message(message.chat.id, payment_message, parse_mode="HTML")
         return
 
     # Transaction Reference Stage
     if len(text) < 4:
-        bot.send_message(message.chat.id, "Please send your transaction reference after paying.")
+        bot.send_message(message.chat.id, "Please send your transaction reference after completing the payment.")
         return
 
     orders = get_user_orders(user_id)
     active_order = next((order for order in orders if order["status"] == "awaiting_payment"), None)
     if not active_order:
-        bot.send_message(message.chat.id, E_HELP + " Use /start to make an order first.", parse_mode="HTML")
+        bot.send_message(message.chat.id, E_HELP + " Please use /start to choose a game and create an order first.", parse_mode="HTML")
         return
 
     bot.send_message(message.chat.id, E_CLOCK + " <b>VERIFYING...</b>", parse_mode="HTML")
@@ -321,7 +330,8 @@ def text_handler(message):
             "Order: <code>" + active_order["id"] + "</code>\n" +
             "Game: " + active_order["game"] + "\n" +
             "Package: " + active_order["package"] + "\n" +
-            "Player ID: <code>" + str(active_order["player_id"]) + "</code>", parse_mode="HTML")
+            "Player ID: <code>" + str(active_order["player_id"]) + "</code>\n\n" +
+            "Type: <code>/confirm " + active_order["id"] + "</code> to deliver.", parse_mode="HTML")
     else:
         update_order(active_order["id"], {"status": "pending_review", "transaction_reference": text})
         bot.send_message(message.chat.id, E_SEARCH + " <b>PAYMENT NEEDS REVIEW</b>\n\nOur team will check it manually.", parse_mode="HTML")
@@ -329,45 +339,8 @@ def text_handler(message):
 
 
 # ============================================================
-# 13. ADMIN BATCH COMMANDS (ADDED WITHOUT CHANGING STRUCTURE)
+# 13. ADMIN CONFIRM & MYORDERS
 # ============================================================
-@bot.message_handler(commands=["batch"])
-def batch_command(message):
-    if str(message.chat.id) != str(ADMIN_CHAT_ID): return
-    
-    pending = get_paid_orders()
-    if not pending:
-        bot.reply_to(message, "No pending orders to fulfill right now.")
-        return
-
-    lines = ["📦 <b>PENDING BATCH</b>\n\n"]
-    for i, order in enumerate(pending, 1):
-        lines.append(f"{i}. ID: <code>{order['player_id']}</code>")
-        lines.append(f"   📦 {order['game']} - {order['package']}")
-        lines.append("")
-    
-    bot.reply_to(message, "\n".join(lines), parse_mode="HTML")
-
-@bot.message_handler(commands=["deliverall"])
-def deliver_all_command(message):
-    if str(message.chat.id) != str(ADMIN_CHAT_ID): return
-    
-    pending = get_paid_orders()
-    if not pending:
-        bot.reply_to(message, "No orders to deliver.")
-        return
-
-    count = 0
-    for order in pending:
-        update_order(order["id"], {"status": "delivered"})
-        try:
-            bot.send_message(order["user_id"], E_CHECK + " <b>TOP-UP DELIVERED!</b>\n\nEnjoy your game!", parse_mode="HTML")
-            count += 1
-        except:
-            pass
-    
-    bot.reply_to(message, f"✅ Delivered {count} orders successfully!")
-
 @bot.message_handler(commands=["myorders"])
 def myorders_command(message):
     orders = get_user_orders(message.from_user.id)[:5]
