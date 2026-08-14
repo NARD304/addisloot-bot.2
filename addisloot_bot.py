@@ -74,10 +74,10 @@ CATALOG = {
         "icon": E_GAME,
         "packages": [
             {"id": "pubg_60", "name": "60 UC", "price": 220},
-            {"id": "pubg_325", "name": "325 UC", "price": 1010},
-            {"id": "pubg_660", "name": "660 UC", "price": 2015},
-            {"id": "pubg_1800", "name": "1800 UC", "price": 5040},
-            {"id": "pubg_3850", "name": "3850 UC", "price": 10080}
+            {"id": "pubg_325", "name": "325 UC", "price": 1200},
+            {"id": "pubg_660", "name": "660 UC", "price": 2390},
+            {"id": "pubg_1800", "name": "1800 UC", "price": 5975},
+            {"id": "pubg_3850", "name": "3850 UC", "price": 11,950}
         ]
     },
     "freefire": {
@@ -86,11 +86,11 @@ CATALOG = {
         "icon": E_FIRE,
         "packages": [
             {"id": "ff_110", "name": "110 Diamonds", "price": 220},
-            {"id": "ff_341", "name": "341 Diamonds", "price": 500},
-            {"id": "ff_572", "name": "572 Diamonds", "price": 820},
-            {"id": "ff_1166", "name": "1166 Diamonds", "price": 1610},
-            {"id": "ff_2398", "name": "2398 Diamonds", "price": 3750},
-            {"id": "ff_6160", "name": "6160 Diamonds", "price": 9600}
+            {"id": "ff_341", "name": "341 Diamonds", "price": 550},
+            {"id": "ff_572", "name": "572 Diamonds", "price": 840},
+            {"id": "ff_1166", "name": "1166 Diamonds", "price": 1670},
+            {"id": "ff_2398", "name": "2398 Diamonds", "price": 3790},
+            {"id": "ff_6160", "name": "6160 Diamonds", "price": 9640}
         ]
     }
 }
