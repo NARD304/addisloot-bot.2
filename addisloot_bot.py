@@ -9,7 +9,7 @@ import string
 import html
 
 # ============================================================
-# ADDISLOOT - FRESH BOT (Manual Fulfillment)
+# ADDISLOOT - FRESH BOT (Manual Fulfillment + Auto-Reply + Batch)
 # ============================================================
 
 # ============================================================
@@ -133,6 +133,10 @@ def get_user_orders(user_id):
     data = load_orders()
     orders = [order for order in data.values() if str(order["user_id"]) == str(user_id)]
     return sorted(orders, key=lambda x: x["created_at"], reverse=True)
+
+def get_paid_orders():
+    data = load_orders()
+    return [order for order in data.values() if order["status"] == "paid"]
 
 
 # ============================================================
@@ -267,7 +271,46 @@ def orders_callback(call):
 
 
 # ============================================================
-# 12. PLAYER ID / PAYMENT FLOW
+# 12. AUTO-REPLY FAQ (NEW FEATURE)
+# ============================================================
+@bot.message_handler(func=lambda message: message.text.lower() in ["price", "prices", "list", "menu"])
+def auto_reply_prices(message):
+    bot.send_message(message.chat.id, 
+        "📋 <b>PUBG & Free Fire Price List</b>\n\n" +
+        "🎮 PUBG: 60 UC (197 Birr) to 3850 UC (10,088 Birr)\n" +
+        "🔥 Free Fire: 110 Diamonds (173 Birr) to 6160 Diamonds (8,683 Birr)\n\n" +
+        "👉 Tap /start and choose your game to see full package details!",
+        parse_mode="HTML")
+
+@bot.message_handler(func=lambda message: "how to pay" in message.text.lower() or "pay" in message.text.lower() or "telebirr" in message.text.lower())
+def auto_reply_pay(message):
+    bot.send_message(message.chat.id, 
+        "💳 <b>How to Pay</b>\n\n" +
+        "1️⃣ Choose your game & package in the bot.\n" +
+        "2️⃣ Send your Player ID.\n" +
+        "3️⃣ Pay the exact amount shown to <code>" + MERCHANT_PAY_TO + "</code> via Telebirr.\n" +
+        "4️⃣ Send your Transaction Reference.\n\n" +
+        "⚠️ <b>Important:</b> Send the EXACT amount, or the bot will reject it!",
+        parse_mode="HTML")
+
+@bot.message_handler(func=lambda message: "my order" in message.text.lower() or "status" in message.text.lower() or "where" in message.text.lower())
+def auto_reply_status(message):
+    orders = get_user_orders(message.from_user.id)
+    if not orders:
+        bot.send_message(message.chat.id, E_PACKAGE + " You have no orders yet. Tap /start to make one!")
+        return
+    recent = orders[0]
+    bot.send_message(message.chat.id, 
+        E_PACKAGE + " <b>Your Latest Order</b>\n\n" +
+        "Order: <code>" + recent["id"] + "</code>\n" +
+        "Game: " + recent["game"] + "\n" +
+        "Package: " + recent["package"] + "\n" +
+        "Status: " + recent["status"].title(),
+        parse_mode="HTML")
+
+
+# ============================================================
+# 13. PLAYER ID / PAYMENT FLOW
 # ============================================================
 @bot.message_handler(func=lambda message: True, content_types=["text"])
 def text_handler(message):
@@ -359,7 +402,7 @@ def text_handler(message):
 
 
 # ============================================================
-# 13. ADMIN CONFIRM & MYORDERS
+# 14. ADMIN COMMANDS (CONFIRM, MYORDERS, DELIVERALL)
 # ============================================================
 @bot.message_handler(commands=["myorders"])
 def myorders_command(message):
@@ -388,9 +431,29 @@ def confirm_command(message):
     except:
         pass
 
+@bot.message_handler(commands=["deliverall"])
+def deliver_all_command(message):
+    if str(message.chat.id) != str(ADMIN_CHAT_ID): return
+    
+    pending = get_paid_orders()
+    if not pending:
+        bot.reply_to(message, "No paid orders to deliver.")
+        return
+
+    count = 0
+    for order in pending:
+        update_order(order["id"], {"status": "delivered"})
+        try:
+            bot.send_message(order["user_id"], E_CHECK + " <b>TOP-UP DELIVERED!</b>\n\nEnjoy your game!", parse_mode="HTML")
+            count += 1
+        except:
+            pass
+    
+    bot.reply_to(message, f"✅ Delivered {count} orders successfully!")
+
 
 # ============================================================
-# 14. START BOT
+# 15. START BOT
 # ============================================================
 if __name__ == "__main__":
     print("AddisLoot Bot is running...")
