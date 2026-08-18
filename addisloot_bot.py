@@ -9,7 +9,7 @@ import string
 import html
 
 # ============================================================
-# ADDISLOOT - FRESH BOT (Manual Fulfillment + Auto-Reply + Batch)
+# ADDISLOOT - FRESH BOT (Manual Fulfillment + Auto-Reply + Queue)
 # ============================================================
 
 # ============================================================
@@ -402,7 +402,7 @@ def text_handler(message):
 
 
 # ============================================================
-# 14. ADMIN COMMANDS (CONFIRM, MYORDERS, DELIVERALL)
+# 14. ADMIN COMMANDS (CONFIRM, MYORDERS, DELIVERALL, QUEUE)
 # ============================================================
 @bot.message_handler(commands=["myorders"])
 def myorders_command(message):
@@ -450,6 +450,23 @@ def deliver_all_command(message):
             pass
     
     bot.reply_to(message, f"✅ Delivered {count} orders successfully!")
+
+@bot.message_handler(commands=["queue"])
+def queue_command(message):
+    if str(message.chat.id) != str(ADMIN_CHAT_ID): return
+    
+    pending = get_paid_orders()
+    if not pending:
+        bot.reply_to(message, "📭 No paid orders waiting in the queue right now.")
+        return
+
+    lines = ["📋 <b>PAYMENT QUEUE</b>\n"]
+    for i, order in enumerate(pending, 1):
+        lines.append(f"{i}. <code>{order['id']}</code> - {order['game']} - {order['package']}")
+        lines.append(f"   👤 Player ID: {order['player_id']}")
+        lines.append("")
+    
+    bot.reply_to(message, "\n".join(lines), parse_mode="HTML")
 
 
 # ============================================================
