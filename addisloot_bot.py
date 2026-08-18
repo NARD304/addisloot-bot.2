@@ -18,7 +18,7 @@ import html
 
 BOT_TOKEN = "8998441498:AAEV-jEkIwkxCoMpkKNSlfscedz25C_bdVs"
 
-ADMIN_CHAT_ID = "1049263489"
+ADMIN_CHAT_ID = "PUT_YOUR_EXISTING_ADMIN_CHAT_ID_HERE"
 
 SHEGERPAY_API_KEY = "sk_live_jpI-xxTgrR3Xj_bRSzoVqEC5wSiLroxV"
 
@@ -62,7 +62,7 @@ E_TRUCK = "\U0001F69A"
 
 
 # ============================================================
-# 3. GAME CATALOG (UPDATED TO 23% PROFIT)
+# 3. GAME CATALOG (23% PROFIT)
 # ============================================================
 
 CATALOG = {
@@ -154,9 +154,9 @@ def money(amount):
 
 SHEGERPAY_BASE_URL = "https://api.shegerpay.com/api/v1"
 
-def verify_payment(transaction_reference, amount, provider):
+def verify_payment(transaction_reference, amount):
     payload = {
-        "provider": provider,
+        "provider": "telebirr",
         "transaction_id": transaction_reference,
         "amount": amount
     }
@@ -293,17 +293,25 @@ def text_handler(message):
         create_order(order)
         del user_state[user_id]
 
-        # Ask them to choose payment provider
-        payment_keyboard = types.InlineKeyboardMarkup(row_width=2)
-        payment_keyboard.add(
-            types.InlineKeyboardButton("📱 Telebirr", callback_data=f"pay_telebirr_{order_id}"),
-            types.InlineKeyboardButton("🏦 CBE", callback_data=f"pay_cbe_{order_id}")
+        # Skip payment selection and go straight to Telebirr payment details
+        payment_message = (
+            E_CARD + " <b>PAYMENT</b>\n\n"
+            "━━━━━━━━━━━━━━━━━━\n\n"
+            + game["icon"] + " Game: <b>" + game["name"] + "</b>\n"
+            + E_DIAMOND + " Package: <b>" + package["name"] + "</b>\n"
+            + E_ID + " Player ID: <code>" + html.escape(text) + "</code>\n\n"
+            + E_MONEY + " <b>TOTAL: " + money(package["price"]) + "</b>\n\n"
+            "━━━━━━━━━━━━━━━━━━\n\n"
+            + E_PHONE + " <b>PAY WITH TELEBIRR</b>\n\n"
+            + E_PERSON + " Account:\n<code>" + html.escape(MERCHANT_PAY_TO) + "</code>\n\n"
+            + E_MONEY + " Send exactly:\n<b>" + money(package["price"]) + "</b>\n\n"
+            "━━━━━━━━━━━━━━━━━━\n\n"
+            + E_RECEIPT + " <b>AFTER PAYMENT</b>\n\n"
+            "Send your transaction reference here.\n\n"
+            + E_SEARCH + " We will check the payment."
         )
         
-        bot.send_message(message.chat.id, 
-            E_CARD + " <b>CHOOSE PAYMENT METHOD</b>\n\n" +
-            "Please select your payment provider:",
-            parse_mode="HTML", reply_markup=payment_keyboard)
+        bot.send_message(message.chat.id, payment_message, parse_mode="HTML")
         return
 
     # Transaction Reference Stage
@@ -331,8 +339,7 @@ def text_handler(message):
 
     bot.send_message(message.chat.id, E_CLOCK + " <b>VERIFYING...</b>", parse_mode="HTML")
     
-    provider = active_order.get("payment_provider", "telebirr")
-    result = verify_payment(text, active_order["amount"], provider)
+    result = verify_payment(text, active_order["amount"])
 
     if result.get("verified"):
         update_order(active_order["id"], {"status": "paid", "transaction_reference": text})
@@ -344,7 +351,6 @@ def text_handler(message):
             "Game: " + active_order["game"] + "\n" +
             "Package: " + active_order["package"] + "\n" +
             "Player ID: <code>" + str(active_order["player_id"]) + "</code>\n\n" +
-            "Payment: " + provider.upper() + "\n" +
             "Type: <code>/confirm " + active_order["id"] + "</code> to deliver.", parse_mode="HTML")
     else:
         update_order(active_order["id"], {"status": "pending_review", "transaction_reference": text})
@@ -353,48 +359,7 @@ def text_handler(message):
 
 
 # ============================================================
-# 13. PAYMENT PROVIDER CALLBACK
-# ============================================================
-@bot.callback_query_handler(func=lambda call: call.data.startswith("pay_"))
-def payment_provider_callback(call):
-    bot.answer_callback_query(call.id)
-    parts = call.data.split("_")
-    if len(parts) != 3: return
-    
-    provider = parts[1]  # "telebirr" or "cbe"
-    order_id = parts[2]
-    
-    order = get_order(order_id)
-    if not order: 
-        bot.send_message(call.message.chat.id, "Order not found. Please start over.")
-        return
-        
-    update_order(order_id, {"payment_provider": provider})
-    
-    provider_name = "TELEBIRR" if provider == "telebirr" else "CBE"
-    
-    payment_message = (
-        E_CARD + " <b>PAYMENT</b>\n\n"
-        "━━━━━━━━━━━━━━━━━━\n\n"
-        + order["icon"] + " Game: <b>" + order["game"] + "</b>\n"
-        + E_DIAMOND + " Package: <b>" + order["package"] + "</b>\n"
-        + E_ID + " Player ID: <code>" + html.escape(order["player_id"]) + "</code>\n\n"
-        + E_MONEY + " <b>TOTAL: " + money(order["amount"]) + "</b>\n\n"
-        "━━━━━━━━━━━━━━━━━━\n\n"
-        + E_PHONE + " <b>PAY WITH " + provider_name + "</b>\n\n"
-        + E_PERSON + " Account:\n<code>" + html.escape(MERCHANT_PAY_TO) + "</code>\n\n"
-        + E_MONEY + " Send exactly:\n<b>" + money(order["amount"]) + "</b>\n\n"
-        "━━━━━━━━━━━━━━━━━━\n\n"
-        + E_RECEIPT + " <b>AFTER PAYMENT</b>\n\n"
-        "Send your transaction reference here.\n\n"
-        + E_SEARCH + " We will check the payment."
-    )
-    
-    bot.edit_message_text(payment_message, call.message.chat.id, call.message.message_id, parse_mode="HTML")
-
-
-# ============================================================
-# 14. ADMIN CONFIRM & MYORDERS
+# 13. ADMIN CONFIRM & MYORDERS
 # ============================================================
 @bot.message_handler(commands=["myorders"])
 def myorders_command(message):
@@ -425,7 +390,7 @@ def confirm_command(message):
 
 
 # ============================================================
-# 15. START BOT
+# 14. START BOT
 # ============================================================
 if __name__ == "__main__":
     print("AddisLoot Bot is running...")
