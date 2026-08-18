@@ -22,8 +22,6 @@ ADMIN_CHAT_ID = "1049263489"
 
 SHEGERPAY_API_KEY = "sk_live_jpI-xxTgrR3Xj_bRSzoVqEC5wSiLroxV"
 
-PAYMENT_PROVIDER = "telebirr"
-
 RECEIVER_NAME = "NAROBIKA"
 
 RECEIVER_ACCOUNT = "0983762777"
@@ -64,7 +62,7 @@ E_TRUCK = "\U0001F69A"
 
 
 # ============================================================
-# 3. GAME CATALOG (UPDATED PRICES)
+# 3. GAME CATALOG (UPDATED TO 23% PROFIT)
 # ============================================================
 
 CATALOG = {
@@ -73,11 +71,11 @@ CATALOG = {
         "product": "UC",
         "icon": E_GAME,
         "packages": [
-            {"id": "pubg_60", "name": "60 UC", "price": 220},
-            {"id": "pubg_325", "name": "325 UC", "price": 1200},
-            {"id": "pubg_660", "name": "660 UC", "price": 2390},
-            {"id": "pubg_1800", "name": "1800 UC", "price": 5980},
-            {"id": "pubg_3850", "name": "3850 UC", "price": 11950}
+            {"id": "pubg_60", "name": "60 UC", "price": 197},
+            {"id": "pubg_325", "name": "325 UC", "price": 1008},
+            {"id": "pubg_660", "name": "660 UC", "price": 2018},
+            {"id": "pubg_1800", "name": "1800 UC", "price": 5043},
+            {"id": "pubg_3850", "name": "3850 UC", "price": 10088}
         ]
     },
     "freefire": {
@@ -85,12 +83,12 @@ CATALOG = {
         "product": "Diamonds",
         "icon": E_FIRE,
         "packages": [
-            {"id": "ff_110", "name": "110 Diamonds", "price": 220},
-            {"id": "ff_341", "name": "341 Diamonds", "price": 620},
-            {"id": "ff_572", "name": "572 Diamonds", "price": 1015},
-            {"id": "ff_1166", "name": "1166 Diamonds", "price": 2030},
-            {"id": "ff_2398", "name": "2398 Diamonds", "price": 4065},
-            {"id": "ff_6160", "name": "6160 Diamonds", "price": 10300}
+            {"id": "ff_110", "name": "110 Diamonds", "price": 173},
+            {"id": "ff_341", "name": "341 Diamonds", "price": 523},
+            {"id": "ff_572", "name": "572 Diamonds", "price": 856},
+            {"id": "ff_1166", "name": "1166 Diamonds", "price": 1713},
+            {"id": "ff_2398", "name": "2398 Diamonds", "price": 3429},
+            {"id": "ff_6160", "name": "6160 Diamonds", "price": 8683}
         ]
     }
 }
@@ -156,9 +154,9 @@ def money(amount):
 
 SHEGERPAY_BASE_URL = "https://api.shegerpay.com/api/v1"
 
-def verify_payment(transaction_reference, amount):
+def verify_payment(transaction_reference, amount, provider):
     payload = {
-        "provider": PAYMENT_PROVIDER,
+        "provider": provider,
         "transaction_id": transaction_reference,
         "amount": amount
     }
@@ -295,42 +293,58 @@ def text_handler(message):
         create_order(order)
         del user_state[user_id]
 
-        payment_message = (E_CARD + " <b>PAYMENT</b>\n\n━━━━━━━━━━━━━━━━━━\n\n" + game["icon"] + " Game: <b>" + game["name"] + 
-            "</b>\n" + E_DIAMOND + " Package: <b>" + package["name"] + "</b>\n" + E_ID + " Player ID: <code>" + text + 
-            "</code>\n\n" + E_MONEY + " <b>TOTAL: " + money(package["price"]) + "</b>\n\n━━━━━━━━━━━━━━━━━━\n\n" + 
-            E_PHONE + " <b>PAY WITH " + PAYMENT_PROVIDER.upper() + "</b>\n\n" + E_PERSON + " Account:\n<code>" + 
-            MERCHANT_PAY_TO + "</code>\n\n" + E_MONEY + " Send exactly:\n<b>" + money(package["price"]) + 
-            "</b>\n\n━━━━━━━━━━━━━━━━━━\n\n" + E_RECEIPT + " <b>AFTER PAYMENT</b>\n\nSend your transaction reference here.\n\n" + 
-            E_SEARCH + " We will check the payment.")
+        # Ask them to choose payment provider
+        payment_keyboard = types.InlineKeyboardMarkup(row_width=2)
+        payment_keyboard.add(
+            types.InlineKeyboardButton("📱 Telebirr", callback_data=f"pay_telebirr_{order_id}"),
+            types.InlineKeyboardButton("🏦 CBE", callback_data=f"pay_cbe_{order_id}")
+        )
         
-        bot.send_message(message.chat.id, payment_message, parse_mode="HTML")
+        bot.send_message(message.chat.id, 
+            E_CARD + " <b>CHOOSE PAYMENT METHOD</b>\n\n" +
+            "Please select your payment provider:",
+            parse_mode="HTML", reply_markup=payment_keyboard)
         return
 
     # Transaction Reference Stage
-    if len(text) < 4:
-        bot.send_message(message.chat.id, "Please send your transaction reference after completing the payment.")
-        return
-
     orders = get_user_orders(user_id)
     active_order = next((order for order in orders if order["status"] == "awaiting_payment"), None)
+
     if not active_order:
         bot.send_message(message.chat.id, E_HELP + " Please use /start to choose a game and create an order first.", parse_mode="HTML")
         return
 
+    # AMOUNT MISMATCH CHECK
+    if text.isdigit() and int(text) != active_order["amount"]:
+        bot.send_message(message.chat.id, 
+            E_WARNING + " <b>AMOUNT MISMATCH!</b>\n\n" +
+            "You sent <b>" + money(int(text)) + "</b>, but the package costs <b>" + money(active_order["amount"]) + "</b>.\n\n" +
+            "Please send the EXACT amount shown in the PAYMENT screen.\n" +
+            "If you overpaid, please contact support for a refund.",
+            parse_mode="HTML"
+        )
+        return
+        
+    if len(text) < 4:
+        bot.send_message(message.chat.id, "Please send your transaction reference after completing the payment.")
+        return
+
     bot.send_message(message.chat.id, E_CLOCK + " <b>VERIFYING...</b>", parse_mode="HTML")
-    result = verify_payment(text, active_order["amount"])
+    
+    provider = active_order.get("payment_provider", "telebirr")
+    result = verify_payment(text, active_order["amount"], provider)
 
     if result.get("verified"):
         update_order(active_order["id"], {"status": "paid", "transaction_reference": text})
         bot.send_message(message.chat.id, E_CHECK + " <b>PAYMENT CONFIRMED!</b>\n\nWe are sending your top-up now. Wait a few moments.", parse_mode="HTML")
         
-        # Send to Admin for Manual Fulfillment
         bot.send_message(ADMIN_CHAT_ID, 
             E_BELL + " <b>NEW ORDER READY</b>\n\n" +
             "Order: <code>" + active_order["id"] + "</code>\n" +
             "Game: " + active_order["game"] + "\n" +
             "Package: " + active_order["package"] + "\n" +
             "Player ID: <code>" + str(active_order["player_id"]) + "</code>\n\n" +
+            "Payment: " + provider.upper() + "\n" +
             "Type: <code>/confirm " + active_order["id"] + "</code> to deliver.", parse_mode="HTML")
     else:
         update_order(active_order["id"], {"status": "pending_review", "transaction_reference": text})
@@ -339,7 +353,48 @@ def text_handler(message):
 
 
 # ============================================================
-# 13. ADMIN CONFIRM & MYORDERS
+# 13. PAYMENT PROVIDER CALLBACK
+# ============================================================
+@bot.callback_query_handler(func=lambda call: call.data.startswith("pay_"))
+def payment_provider_callback(call):
+    bot.answer_callback_query(call.id)
+    parts = call.data.split("_")
+    if len(parts) != 3: return
+    
+    provider = parts[1]  # "telebirr" or "cbe"
+    order_id = parts[2]
+    
+    order = get_order(order_id)
+    if not order: 
+        bot.send_message(call.message.chat.id, "Order not found. Please start over.")
+        return
+        
+    update_order(order_id, {"payment_provider": provider})
+    
+    provider_name = "TELEBIRR" if provider == "telebirr" else "CBE"
+    
+    payment_message = (
+        E_CARD + " <b>PAYMENT</b>\n\n"
+        "━━━━━━━━━━━━━━━━━━\n\n"
+        + order["icon"] + " Game: <b>" + order["game"] + "</b>\n"
+        + E_DIAMOND + " Package: <b>" + order["package"] + "</b>\n"
+        + E_ID + " Player ID: <code>" + html.escape(order["player_id"]) + "</code>\n\n"
+        + E_MONEY + " <b>TOTAL: " + money(order["amount"]) + "</b>\n\n"
+        "━━━━━━━━━━━━━━━━━━\n\n"
+        + E_PHONE + " <b>PAY WITH " + provider_name + "</b>\n\n"
+        + E_PERSON + " Account:\n<code>" + html.escape(MERCHANT_PAY_TO) + "</code>\n\n"
+        + E_MONEY + " Send exactly:\n<b>" + money(order["amount"]) + "</b>\n\n"
+        "━━━━━━━━━━━━━━━━━━\n\n"
+        + E_RECEIPT + " <b>AFTER PAYMENT</b>\n\n"
+        "Send your transaction reference here.\n\n"
+        + E_SEARCH + " We will check the payment."
+    )
+    
+    bot.edit_message_text(payment_message, call.message.chat.id, call.message.message_id, parse_mode="HTML")
+
+
+# ============================================================
+# 14. ADMIN CONFIRM & MYORDERS
 # ============================================================
 @bot.message_handler(commands=["myorders"])
 def myorders_command(message):
@@ -370,7 +425,7 @@ def confirm_command(message):
 
 
 # ============================================================
-# 14. START BOT
+# 15. START BOT
 # ============================================================
 if __name__ == "__main__":
     print("AddisLoot Bot is running...")
