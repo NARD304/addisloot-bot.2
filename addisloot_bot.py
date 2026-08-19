@@ -6,10 +6,13 @@ import os
 import time
 import random
 import string
+import hmac
+import hashlib
+import uuid
 import html
 
 # ============================================================
-# ADDISLOOT - FRESH BOT (Manual Fulfillment + Auto-Reply + Queue)
+# ADDISLOOT - AUTOMATIC BOT (API VERSION)
 # ============================================================
 
 # ============================================================
@@ -23,10 +26,15 @@ ADMIN_CHAT_ID = "1049263489"
 SHEGERPAY_API_KEY = "sk_live_jpI-xxTgrR3Xj_bRSzoVqEC5wSiLroxV"
 
 RECEIVER_NAME = "NAROBIKA"
-
 RECEIVER_ACCOUNT = "0983762777"
-
 MERCHANT_PAY_TO = "0983762777"
+
+# ============================================================
+# FLASHTOPUP API CONFIG (FROM YOUR SCREENSHOT)
+# ============================================================
+FT_API_ID = "RS8XTD55WTQ0RU7V"
+FT_API_KEY = "88a2bdcd1e2973cd06b858aa430fda063e49bc4d54bb91ae6627233a4406673a"
+FT_BASE_URL = "https://api.flashtopup.com/api/reseller/v2"
 
 
 # ============================================================
@@ -57,7 +65,6 @@ E_PHONE = "\U0001F4F1"
 E_BELL = "\U0001F514"
 E_CHAT = "\U0001F4AC"
 E_LABEL = "\U0001F3F7\uFE0F"
-E_GLOBE = "\U0001F310"
 E_TRUCK = "\U0001F69A"
 
 
@@ -71,11 +78,11 @@ CATALOG = {
         "product": "UC",
         "icon": E_GAME,
         "packages": [
-            {"id": "pubg_60", "name": "60 UC", "price": 197},
-            {"id": "pubg_325", "name": "325 UC", "price": 1008},
-            {"id": "pubg_660", "name": "660 UC", "price": 2018},
-            {"id": "pubg_1800", "name": "1800 UC", "price": 5043},
-            {"id": "pubg_3850", "name": "3850 UC", "price": 10088}
+            {"id": "pubg_60", "name": "60 UC", "price": 197, "service_code": "404"},
+            {"id": "pubg_325", "name": "325 UC", "price": 1008, "service_code": "405"},
+            {"id": "pubg_660", "name": "660 UC", "price": 2018, "service_code": "406"},
+            {"id": "pubg_1800", "name": "1800 UC", "price": 5043, "service_code": "407"},
+            {"id": "pubg_3850", "name": "3850 UC", "price": 10088, "service_code": "408"}
         ]
     },
     "freefire": {
@@ -83,12 +90,12 @@ CATALOG = {
         "product": "Diamonds",
         "icon": E_FIRE,
         "packages": [
-            {"id": "ff_110", "name": "110 Diamonds", "price": 173},
-            {"id": "ff_341", "name": "341 Diamonds", "price": 523},
-            {"id": "ff_572", "name": "572 Diamonds", "price": 856},
-            {"id": "ff_1166", "name": "1166 Diamonds", "price": 1713},
-            {"id": "ff_2398", "name": "2398 Diamonds", "price": 3429},
-            {"id": "ff_6160", "name": "6160 Diamonds", "price": 8683}
+            {"id": "ff_110", "name": "110 Diamonds", "price": 173, "service_code": "441"},
+            {"id": "ff_341", "name": "341 Diamonds", "price": 523, "service_code": "442"},
+            {"id": "ff_572", "name": "572 Diamonds", "price": 856, "service_code": "443"},
+            {"id": "ff_1166", "name": "1166 Diamonds", "price": 1713, "service_code": "444"},
+            {"id": "ff_2398", "name": "2398 Diamonds", "price": 3429, "service_code": "445"},
+            {"id": "ff_6160", "name": "6160 Diamonds", "price": 8683, "service_code": "446"}
         ]
     }
 }
@@ -134,10 +141,6 @@ def get_user_orders(user_id):
     orders = [order for order in data.values() if str(order["user_id"]) == str(user_id)]
     return sorted(orders, key=lambda x: x["created_at"], reverse=True)
 
-def get_paid_orders():
-    data = load_orders()
-    return [order for order in data.values() if order["status"] == "paid"]
-
 
 # ============================================================
 # 5. ORDER ID & MONEY
@@ -180,14 +183,72 @@ def verify_payment(transaction_reference, amount):
 
 
 # ============================================================
-# 7. BOT
+# 7. FLASHTOPUP API (AUTOMATIC ORDER PLACEMENT)
+# ============================================================
+
+def place_flashtopup_order(service_code, player_id, reference_id):
+    path = "/order"
+    method = "POST"
+
+    timestamp = str(int(time.time()))
+    nonce = str(uuid.uuid4())
+
+    body_dict = {
+        "service_code": service_code,
+        "reference_id": str(reference_id),
+        "quantity": 1,
+        "user_id": str(player_id),
+    }
+
+    body = json.dumps(body_dict, separators=(",", ":"))
+    body_hash = hashlib.sha256(body.encode("utf-8")).hexdigest()
+    signing_path = "/api/reseller/v2" + path
+
+    string_to_sign = f"{method}{signing_path}{timestamp}{nonce}{body_hash}"
+    signature = hmac.new(FT_API_KEY.encode("utf-8"), string_to_sign.encode("utf-8"), hashlib.sha256).hexdigest()
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-FT-API-ID": FT_API_ID,
+        "X-FT-Timestamp": timestamp,
+        "X-FT-Nonce": nonce,
+        "X-FT-Signature": signature,
+    }
+
+    try:
+        response = requests.post(FT_BASE_URL + path, headers=headers, data=body, timeout=30)
+        try:
+            response.raise_for_status()
+            return response.json()
+        except ValueError:
+            return {
+                "success": False,
+                "error": "non_json_response",
+                "status_code": response.status_code,
+                "raw": response.text[:500],
+            }
+        except requests.HTTPError:
+            try:
+                details = response.json()
+            except ValueError:
+                details = response.text[:500]
+            return {"success": False, "error": "http_error", "status_code": response.status_code, "details": details}
+    except Exception as error:
+        print("FLASHTOPUP ERROR:", error)
+        return {"success": False, "error": str(error)}
+
+
+def flashtopup_looks_successful(ft_result):
+    if not isinstance(ft_result, dict): return False
+    if ft_result.get("success") is True: return True
+    status = str(ft_result.get("status", "")).lower()
+    return status in ("success", "completed", "processing", "pending")
+
+
+# ============================================================
+# 8. BOT
 # ============================================================
 bot = telebot.TeleBot(BOT_TOKEN)
-
-
-# ============================================================
-# 8. TEMPORARY USER STATE
-# ============================================================
 user_state = {}
 
 
@@ -271,7 +332,7 @@ def orders_callback(call):
 
 
 # ============================================================
-# 12. AUTO-REPLY FAQ (NEW FEATURE)
+# 12. AUTO-REPLY FAQ
 # ============================================================
 @bot.message_handler(func=lambda message: message.text.lower() in ["price", "prices", "list", "menu"])
 def auto_reply_prices(message):
@@ -336,7 +397,7 @@ def text_handler(message):
         create_order(order)
         del user_state[user_id]
 
-        # Skip payment selection and go straight to Telebirr payment details
+        # Go straight to Telebirr payment details
         payment_message = (
             E_CARD + " <b>PAYMENT</b>\n\n"
             "━━━━━━━━━━━━━━━━━━\n\n"
@@ -388,13 +449,30 @@ def text_handler(message):
         update_order(active_order["id"], {"status": "paid", "transaction_reference": text})
         bot.send_message(message.chat.id, E_CHECK + " <b>PAYMENT CONFIRMED!</b>\n\nWe are sending your top-up now. Wait a few moments.", parse_mode="HTML")
         
-        bot.send_message(ADMIN_CHAT_ID, 
-            E_BELL + " <b>NEW ORDER READY</b>\n\n" +
-            "Order: <code>" + active_order["id"] + "</code>\n" +
-            "Game: " + active_order["game"] + "\n" +
-            "Package: " + active_order["package"] + "\n" +
-            "Player ID: <code>" + str(active_order["player_id"]) + "</code>\n\n" +
-            "Type: <code>/confirm " + active_order["id"] + "</code> to deliver.", parse_mode="HTML")
+        # --- AUTOMATIC FLASHTOPUP API CALL ---
+        service_code = active_order.get("service_code")
+        
+        if not service_code:
+            update_order(active_order["id"], {"status": "pending_review"})
+            bot.send_message(ADMIN_CHAT_ID, E_WARNING + " Order " + active_order["id"] + " has no service code. Manual review needed.")
+            return
+
+        ft_result = place_flashtopup_order(
+            service_code=service_code,
+            player_id=active_order["player_id"],
+            reference_id=active_order["id"]
+        )
+        
+        ft_success = flashtopup_looks_successful(ft_result)
+        update_order(active_order["id"], {"status": "processing_delivery" if ft_success else "supplier_order_failed"})
+
+        if ft_success:
+            update_order(active_order["id"], {"status": "delivered"})
+            bot.send_message(message.chat.id, E_ROCKET + " <b>TOP-UP DELIVERED!</b>\n\nEnjoy your game!", parse_mode="HTML")
+        else:
+            bot.send_message(message.chat.id, E_CHECK + " <b>PAYMENT CONFIRMED!</b>\n\nOur system is processing your order. You will be notified shortly.", parse_mode="HTML")
+            bot.send_message(ADMIN_CHAT_ID, E_WARNING + " FlashTopup API failed for order " + active_order["id"] + ". Check logs.")
+
     else:
         update_order(active_order["id"], {"status": "pending_review", "transaction_reference": text})
         bot.send_message(message.chat.id, E_SEARCH + " <b>PAYMENT NEEDS REVIEW</b>\n\nOur team will check it manually.", parse_mode="HTML")
@@ -402,7 +480,7 @@ def text_handler(message):
 
 
 # ============================================================
-# 14. ADMIN COMMANDS (CONFIRM, MYORDERS, DELIVERALL, QUEUE)
+# 14. ADMIN COMMANDS
 # ============================================================
 @bot.message_handler(commands=["myorders"])
 def myorders_command(message):
@@ -433,13 +511,8 @@ def confirm_command(message):
 
 @bot.message_handler(commands=["deliverall"])
 def deliver_all_command(message):
-    if str(message.chat.id) != str(ADMIN_CHAT_ID): return
-    
-    pending = get_paid_orders()
-    if not pending:
-        bot.reply_to(message, "No paid orders to deliver.")
-        return
-
+    pending = [o for o in load_orders().values() if o["status"] == "paid"]
+    if not pending: return bot.reply_to(message, "No pending orders.")
     count = 0
     for order in pending:
         update_order(order["id"], {"status": "delivered"})
@@ -448,24 +521,17 @@ def deliver_all_command(message):
             count += 1
         except:
             pass
-    
     bot.reply_to(message, f"✅ Delivered {count} orders successfully!")
 
 @bot.message_handler(commands=["queue"])
 def queue_command(message):
-    if str(message.chat.id) != str(ADMIN_CHAT_ID): return
-    
-    pending = get_paid_orders()
+    pending = [o for o in load_orders().values() if o["status"] in ["paid", "pending_review", "supplier_order_failed"]]
     if not pending:
-        bot.reply_to(message, "📭 No paid orders waiting in the queue right now.")
+        bot.reply_to(message, "📭 No pending orders.")
         return
-
-    lines = ["📋 <b>PAYMENT QUEUE</b>\n"]
-    for i, order in enumerate(pending, 1):
-        lines.append(f"{i}. <code>{order['id']}</code> - {order['game']} - {order['package']}")
-        lines.append(f"   👤 Player ID: {order['player_id']}")
-        lines.append("")
-    
+    lines = ["📋 <b>ORDER QUEUE</b>\n"]
+    for o in pending:
+        lines.append(f"<code>{o['id']}</code> - {o['game']} - {o['package']}\n   👤 ID: {o['player_id']}\n   📌 Status: {o['status']}")
     bot.reply_to(message, "\n".join(lines), parse_mode="HTML")
 
 
@@ -473,5 +539,10 @@ def queue_command(message):
 # 15. START BOT
 # ============================================================
 if __name__ == "__main__":
-    print("AddisLoot Bot is running...")
+    print("======================================")
+    print(" ADDISLOOT AUTO BOT STARTED")
+    print("======================================")
+    print("API ID: " + FT_API_ID)
+    print("Status: LIVE")
+    print("======================================")
     bot.infinity_polling()
