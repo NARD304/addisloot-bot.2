@@ -427,8 +427,6 @@ def text_handler(message):
         bot.send_message(message.chat.id, E_HELP + " Please use /start to choose a game and create an order first.", parse_mode="HTML")
         return
 
-    # --- NEW AMOUNT CHECK RULE ---
-    # Automatically accepts up to 10 Birr overpayment, flags exact underpayment or >10 over.
     if text.isdigit() and (int(text) < active_order["amount"] or int(text) > active_order["amount"] + 10):
         bot.send_message(message.chat.id, 
             E_WARNING + " <b>AMOUNT MISMATCH!</b>\n\n" +
@@ -537,7 +535,46 @@ def queue_command(message):
 
 
 # ============================================================
-# 15. START BOT
+# 15. DAILY PROFIT TRACKER (/today COMMAND)
+# ============================================================
+@bot.message_handler(commands=["today"])
+def today_stats(message):
+    if str(message.chat.id) != str(ADMIN_CHAT_ID):
+        return
+
+    today = time.strftime("%Y-%m-%d")
+    data = load_orders()
+    today_orders = []
+    
+    for order in data.values():
+        order_date = time.strftime("%Y-%m-%d", time.localtime(order.get("created_at", 0)))
+        if order_date == today:
+            today_orders.append(order)
+    
+    if not today_orders:
+        bot.reply_to(message, "📭 There are no orders from today.")
+        return
+    
+    total_orders = len(today_orders)
+    total_revenue = sum(o.get("amount", 0) for o in today_orders)
+    
+    estimated_cost = int(total_revenue * 0.77)
+    estimated_profit = total_revenue - estimated_cost
+    
+    stats_message = (
+        "📊 <b>DAILY STATS</b>\n\n"
+        f"📅 Date: {today}\n"
+        f"📦 Orders: {total_orders}\n"
+        f"💰 Revenue: {money(total_revenue)}\n"
+        f"💸 Est. Cost: {money(estimated_cost)}\n"
+        f"✅ <b>Net Profit: {money(estimated_profit)}</b>"
+    )
+    
+    bot.reply_to(message, stats_message, parse_mode="HTML")
+
+
+# ============================================================
+# 16. START BOT
 # ============================================================
 if __name__ == "__main__":
     print("======================================")
