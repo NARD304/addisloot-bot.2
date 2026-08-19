@@ -475,7 +475,19 @@ def text_handler(message):
     else:
         update_order(active_order["id"], {"status": "pending_review", "transaction_reference": text})
         bot.send_message(message.chat.id, E_SEARCH + " <b>PAYMENT NEEDS REVIEW</b>\n\nOur team will check it manually.", parse_mode="HTML")
-        bot.send_message(ADMIN_CHAT_ID, E_WARNING + " MANUAL REVIEW: " + active_order["id"])
+        
+        # --- FIXED ADMIN ALERT ---
+        admin_message = (
+            E_WARNING + " <b>MANUAL REVIEW REQUIRED</b>\n\n"
+            "Order: <code>" + active_order["id"] + "</code>\n"
+            + E_PERSON + " Buyer: @" + html.escape(str(active_order["username"])) + "\n\n"
+            + E_GAME + " " + html.escape(active_order["game"]) + "\n"
+            + E_DIAMOND + " " + html.escape(active_order["package"]) + "\n"
+            + E_MONEY + " " + money(active_order["amount"]) + "\n"
+            + E_ID + " Player ID: <code>" + html.escape(str(active_order["player_id"])) + "</code>\n\n"
+            + E_RECEIPT + " Reference: <code>" + html.escape(text) + "</code>"
+        )
+        bot.send_message(ADMIN_CHAT_ID, admin_message, parse_mode="HTML")
 
 
 # ============================================================
