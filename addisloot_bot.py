@@ -12,7 +12,7 @@ import uuid
 import html
 
 # ============================================================
-# ADDISLOOT - AUTOMATIC BOT (API VERSION)
+# ADDISLOOT - AUTOMATIC BOT
 # ============================================================
 
 # ============================================================
@@ -30,7 +30,7 @@ RECEIVER_ACCOUNT = "0983762777"
 MERCHANT_PAY_TO = "0983762777"
 
 # ============================================================
-# FLASHTOPUP API CONFIG (FROM YOUR SCREENSHOT)
+# FLASHTOPUP API CONFIG
 # ============================================================
 FT_API_ID = "RS8XTD55WTQ0RU7V"
 FT_API_KEY = "88a2bdcd1e2973cd06b858aa430fda063e49bc4d54bb91ae6627233a4406673a"
@@ -351,7 +351,8 @@ def auto_reply_pay(message):
         "2️⃣ Send your Player ID.\n" +
         "3️⃣ Pay the exact amount shown to <code>" + MERCHANT_PAY_TO + "</code> via Telebirr.\n" +
         "4️⃣ Send your Transaction Reference.\n\n" +
-        "⚠️ <b>Important:</b> Send the EXACT amount, or the bot will reject it!",
+        "⚠️ <b>Important:</b> Send the EXACT amount shown in the bot.\n\n" +
+        "💡 <b>Note:</b> Small overpayments (up to 10 Birr) are automatically accepted.",
         parse_mode="HTML")
 
 @bot.message_handler(func=lambda message: "my order" in message.text.lower() or "status" in message.text.lower() or "where" in message.text.lower())
@@ -397,7 +398,6 @@ def text_handler(message):
         create_order(order)
         del user_state[user_id]
 
-        # Go straight to Telebirr payment details
         payment_message = (
             E_CARD + " <b>PAYMENT</b>\n\n"
             "━━━━━━━━━━━━━━━━━━\n\n"
@@ -412,7 +412,8 @@ def text_handler(message):
             "━━━━━━━━━━━━━━━━━━\n\n"
             + E_RECEIPT + " <b>AFTER PAYMENT</b>\n\n"
             "Send your transaction reference here.\n\n"
-            + E_SEARCH + " We will check the payment."
+            + E_SEARCH + " We will check the payment.\n\n"
+            + "💡 <b>Note:</b> Small overpayments (up to 10 Birr) are automatically accepted."
         )
         
         bot.send_message(message.chat.id, payment_message, parse_mode="HTML")
@@ -426,13 +427,14 @@ def text_handler(message):
         bot.send_message(message.chat.id, E_HELP + " Please use /start to choose a game and create an order first.", parse_mode="HTML")
         return
 
-    # AMOUNT MISMATCH CHECK
-    if text.isdigit() and int(text) != active_order["amount"]:
+    # --- NEW AMOUNT CHECK RULE ---
+    # Automatically accepts up to 10 Birr overpayment, flags exact underpayment or >10 over.
+    if text.isdigit() and (int(text) < active_order["amount"] or int(text) > active_order["amount"] + 10):
         bot.send_message(message.chat.id, 
             E_WARNING + " <b>AMOUNT MISMATCH!</b>\n\n" +
             "You sent <b>" + money(int(text)) + "</b>, but the package costs <b>" + money(active_order["amount"]) + "</b>.\n\n" +
-            "Please send the EXACT amount shown in the PAYMENT screen.\n" +
-            "If you overpaid, please contact support for a refund.",
+            "⚠️ <b>Overpayments of more than 10 Birr or any underpayments are not accepted automatically.</b>\n\n" +
+            "👉 Please send the EXACT amount shown in the PAYMENT screen, or keep overpayment within 10 Birr.",
             parse_mode="HTML"
         )
         return
@@ -449,7 +451,6 @@ def text_handler(message):
         update_order(active_order["id"], {"status": "paid", "transaction_reference": text})
         bot.send_message(message.chat.id, E_CHECK + " <b>PAYMENT CONFIRMED!</b>\n\nWe are sending your top-up now. Wait a few moments.", parse_mode="HTML")
         
-        # --- AUTOMATIC FLASHTOPUP API CALL ---
         service_code = active_order.get("service_code")
         
         if not service_code:
@@ -541,8 +542,5 @@ def queue_command(message):
 if __name__ == "__main__":
     print("======================================")
     print(" ADDISLOOT AUTO BOT STARTED")
-    print("======================================")
-    print("API ID: " + FT_API_ID)
-    print("Status: LIVE")
     print("======================================")
     bot.infinity_polling()
