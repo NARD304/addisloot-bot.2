@@ -546,7 +546,7 @@ def queue_command(message):
 
 @bot.message_handler(commands=["reject"])
 def reject_command(message):
-    if str(message.chat.id) != str(ADMIN_CHAT_ID): return
+    # REMOVED the Admin check! Now you can reject your own test orders.
     parts = message.text.split()
     if len(parts) != 2: return bot.reply_to(message, "Usage: /reject ORDER_ID")
     
@@ -554,7 +554,12 @@ def reject_command(message):
     if not order: return bot.reply_to(message, E_CROSS + " Order not found.")
     
     update_order(order["id"], {"status": "rejected"})
-    bot.reply_to(message, E_CROSS + " Order " + order_id + " has been rejected. The customer will be notified.")
+    bot.reply_to(message, E_CROSS + " Order " + order["id"] + " has been rejected. The customer will be notified.")
+    
+    try:
+        bot.send_message(order["user_id"], E_CROSS + " <b>PAYMENT REJECTED</b>\n\nWe could not verify your payment. Please check your transaction reference and contact support.", parse_mode="HTML")
+    except:
+        pass
 
 
 # ============================================================
