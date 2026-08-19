@@ -476,7 +476,6 @@ def text_handler(message):
         update_order(active_order["id"], {"status": "pending_review", "transaction_reference": text})
         bot.send_message(message.chat.id, E_SEARCH + " <b>PAYMENT NEEDS REVIEW</b>\n\nOur team will check it manually.", parse_mode="HTML")
         
-        # --- FIXED ADMIN ALERT ---
         admin_message = (
             E_WARNING + " <b>MANUAL REVIEW REQUIRED</b>\n\n"
             "Order: <code>" + active_order["id"] + "</code>\n"
@@ -544,6 +543,18 @@ def queue_command(message):
     for o in pending:
         lines.append(f"<code>{o['id']}</code> - {o['game']} - {o['package']}\n   👤 ID: {o['player_id']}\n   📌 Status: {o['status']}")
     bot.reply_to(message, "\n".join(lines), parse_mode="HTML")
+
+@bot.message_handler(commands=["reject"])
+def reject_command(message):
+    if str(message.chat.id) != str(ADMIN_CHAT_ID): return
+    parts = message.text.split()
+    if len(parts) != 2: return bot.reply_to(message, "Usage: /reject ORDER_ID")
+    
+    order = get_order(parts[1])
+    if not order: return bot.reply_to(message, E_CROSS + " Order not found.")
+    
+    update_order(order["id"], {"status": "rejected"})
+    bot.reply_to(message, E_CROSS + " Order " + order_id + " has been rejected. The customer will be notified.")
 
 
 # ============================================================
