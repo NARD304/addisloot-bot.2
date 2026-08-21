@@ -546,7 +546,6 @@ def queue_command(message):
 
 @bot.message_handler(commands=["reject"])
 def reject_command(message):
-    # REMOVED the Admin check! Now you can reject your own test orders.
     parts = message.text.split()
     if len(parts) != 2: return bot.reply_to(message, "Usage: /reject ORDER_ID")
     
