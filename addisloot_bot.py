@@ -246,6 +246,42 @@ def flashtopup_looks_successful(ft_result):
 
 
 # ============================================================
+# 7b. CHECK FLASHTOPUP WALLET BALANCE (NEW)
+# ============================================================
+
+def check_flashtopup_balance():
+    path = "/balance"
+    method = "GET"
+
+    timestamp = str(int(time.time()))
+    nonce = str(uuid.uuid4())
+
+    body = ""
+    body_hash = hashlib.sha256(body.encode("utf-8")).hexdigest()
+    signing_path = "/api/reseller/v2" + path
+
+    string_to_sign = f"{method}{signing_path}{timestamp}{nonce}{body_hash}"
+    signature = hmac.new(FT_API_KEY.encode("utf-8"), string_to_sign.encode("utf-8"), hashlib.sha256).hexdigest()
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-FT-API-ID": FT_API_ID,
+        "X-FT-Timestamp": timestamp,
+        "X-FT-Nonce": nonce,
+        "X-FT-Signature": signature,
+    }
+
+    try:
+        response = requests.get(FT_BASE_URL + path, headers=headers, timeout=15)
+        response.raise_for_status()
+        result = response.json()
+        return result
+    except Exception as error:
+        print("FLASHTOPUP BALANCE ERROR:", error)
+        return {"success": False, "error": str(error)}
+
+
+# ============================================================
 # 8. BOT
 # ============================================================
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -454,6 +490,18 @@ def text_handler(message):
         # ==========================================================
         bot.send_message(message.chat.id, E_TRUCK + " <b>ORDER IS BEING PROCESSED</b>\n\nOur system is securely delivering your top-up. Just a moment...", parse_mode="HTML")
         
+        # ==========================================================
+        # 💰 CHECK FLASHTOPUP WALLET BALANCE BEFORE ORDERING
+        # ==========================================================
+        balance_check = check_flashtopup_balance()
+        print("Balance Check:", balance_check)  # For debugging
+
+        if not balance_check.get("success", False) or float(str(balance_check.get("balance", 0))) < 1:
+            update_order(active_order["id"], {"status": "pending_review"})
+            bot.send_message(message.chat.id, "✅ <b>PAYMENT CONFIRMED!</b>\n\nWe have received your payment. Your top-up is currently being processed and will be delivered shortly. Please keep this chat open.", parse_mode="HTML")
+            bot.send_message(ADMIN_CHAT_ID, "🚨 CRITICAL ALERT: FlashTopup wallet is empty! Please refill immediately. Order " + active_order["id"] + " is waiting.", parse_mode="HTML")
+            return
+
         service_code = active_order.get("service_code")
         
         if not service_code:
