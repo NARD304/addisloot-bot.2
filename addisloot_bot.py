@@ -573,7 +573,6 @@ def confirm_command(message):
     except:
         bot.reply_to(message, "⚠️ Order " + order["id"] + " delivered, but the customer could NOT be reached. Please contact them manually.")
 
-
 @bot.message_handler(commands=["deliverall"])
 def deliver_all_command(message):
     pending = [o for o in load_orders().values() if o["status"] == "paid"]
