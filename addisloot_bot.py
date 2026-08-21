@@ -569,8 +569,10 @@ def confirm_command(message):
     bot.reply_to(message, E_CHECK + f" Order {order['id']} marked delivered!")
     try:
         bot.send_message(order["user_id"], E_CHECK + " <b>TOP-UP DELIVERED!</b>\n\nEnjoy your game!", parse_mode="HTML")
+        bot.reply_to(message, "✅ Order " + order["id"] + " delivered. The customer was successfully notified.")
     except:
-        pass
+        bot.reply_to(message, "⚠️ Order " + order["id"] + " delivered, but the customer could NOT be reached. Please contact them manually.")
+
 
 @bot.message_handler(commands=["deliverall"])
 def deliver_all_command(message):
