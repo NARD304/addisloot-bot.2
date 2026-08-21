@@ -449,6 +449,11 @@ def text_handler(message):
         update_order(active_order["id"], {"status": "paid", "transaction_reference": text})
         bot.send_message(message.chat.id, E_CHECK + " <b>PAYMENT CONFIRMED!</b>\n\nWe are sending your top-up now. Wait a few moments.", parse_mode="HTML")
         
+        # ==========================================================
+        # 🚚 NEW: SEND "PROCESSING" STATUS MESSAGE TO CUSTOMER
+        # ==========================================================
+        bot.send_message(message.chat.id, E_TRUCK + " <b>ORDER IS BEING PROCESSED</b>\n\nOur system is securely delivering your top-up. Just a moment...", parse_mode="HTML")
+        
         service_code = active_order.get("service_code")
         
         if not service_code:
